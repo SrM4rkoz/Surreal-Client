@@ -1,6 +1,6 @@
 # Surreal-Client
 Um cliente do SurrealDB feito em Tauri/Rust para controles e relatórios simples do dia a dia.
-- Projeto inicial (vazio) na branch void.
+- Projeto inicial (vazio) na branch void e primeiro commit na main.
 
 ---
 
