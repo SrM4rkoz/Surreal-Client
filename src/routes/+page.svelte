@@ -1,6 +1,10 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { Grid, Willow } from "@svar-ui/svelte-grid";
+  import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+  // import AppSidebar from "$lib/components/app-sidebar.svelte";
+
+  let { children } = $props();
 
   let name = $state("asdff");
   let greetMsg = $state("");
@@ -68,6 +72,15 @@
 </script>
 
 <main class="container">
+  <!-- Sidebar: -->
+  <Sidebar.Provider>
+    <!-- <AppSidebar /> -->
+    <div>
+      <Sidebar.Trigger />
+      {@render children?.()}
+    </div>
+  </Sidebar.Provider>
+
   <h1>Welcome to Tauri + Svelte</h1>
 
   <div class="row">
@@ -88,6 +101,8 @@
     <button type="submit">Greet</button>
   </form>
   <p>{greetMsg}</p>
+
+  <!-- GRID: -->
   <Grid {data} {columns} />
 </main>
 
