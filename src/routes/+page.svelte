@@ -197,16 +197,20 @@
           </Tabs.Content>
         {/each}
         <Tabs.Content value="vazio">VAZIO!</Tabs.Content>
+        <!-- Container isolado para o SVAR DataGrid -->
+        <Separator class="m-1" />
+        <p>
+          {abas.length <= 1
+            ? "Selecione alguma tabela para visualizar os dados!"
+            : ""}
+        </p>
+        <div
+          style="height: 500px; width: 100%;"
+          class="rounded-lg border border-border bg-card p-2 shadow-sm"
+        >
+          <Grid {data} {columns} multiselect={true} />
+        </div>
       </Tabs.Root>
-      <Separator class="m-1" />
-
-      <!-- Container isolado para o SVAR DataGrid -->
-      <div
-        style="height: 500px; width: 100%;"
-        class="rounded-lg border border-border bg-card p-2 shadow-sm"
-      >
-        <Grid {data} {columns} multiselect={true} />
-      </div>
     </main>
   </div>
 </Sidebar.Provider>
