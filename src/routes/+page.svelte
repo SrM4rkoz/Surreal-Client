@@ -1,227 +1,150 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
-  import { Grid, Willow } from "@svar-ui/svelte-grid";
+  import { Grid } from "@svar-ui/svelte-grid";
+
+  // Sidebar e Ícones
+  import CalendarIcon from "@lucide/svelte/icons/calendar";
+  import HouseIcon from "@lucide/svelte/icons/house";
+  import InboxIcon from "@lucide/svelte/icons/inbox";
+  import SearchIcon from "@lucide/svelte/icons/search";
+  import SettingsIcon from "@lucide/svelte/icons/settings";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  // import AppSidebar from "$lib/components/app-sidebar.svelte";
 
-  let { children } = $props();
+  // Dados do Grid
+  const countries = [
+    { id: 1, label: "Gameleira, Pernambuco" },
+    { id: 2, label: "Osasco, São Paulo" },
+    { id: 3, label: "Japão" },
+  ];
 
-  let name = $state("asdff");
-  let greetMsg = $state("");
+  const users = [
+    { id: 101, label: "Aux. Adm" },
+    { id: 102, label: "Administrador" },
+    { id: 103, label: "Supervisor" },
+  ];
 
-  async function greet(event: Event) {
-    event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsg = await invoke("greet", { name });
-  }
-
-  // GRID:
   const data = [
+    { id: 1, firstName: "Marcos", country: 1, date: new Date(), assigned: 101 },
     {
-      id: 1,
-      city: "Amieshire",
-      email: "Leora13@yahoo.com",
-      firstName: "Ernest",
-      lastName: "Schuppe",
-      companyName: "Lebsack - Nicolas",
+      id: 3,
+      firstName: "Marcos 2",
+      country: 2,
+      date: new Date(),
+      assigned: 103,
+    },
+    {
+      id: 4,
+      firstName: "Marcos 2",
+      country: 2,
+      date: new Date(),
+      assigned: 103,
     },
     {
       id: 2,
-      city: "Gust",
-      email: "Mose_Gerhold51@yahoo.com",
-      firstName: "Janis",
-      lastName: "Vandervort",
-      companyName: "Glover - Hermiston",
+      firstName: "Micael",
+      country: 2,
+      date: new Date(),
+      assigned: 102,
     },
   ];
 
+  type ComboOption = { id: string | number; label: string };
+
   const columns = [
+    { id: "id", header: "ID", width: 50 },
+    { id: "firstName", header: "Nome", editor: "text", width: 180 },
     {
-      id: "id",
-      width: 80,
+      id: "country",
+      header: "Cidade",
+      editor: {
+        type: "combo",
+        config: {
+          template: (option: ComboOption) => `${option.id}. ${option.label}`,
+        },
+      },
+      options: countries,
+      width: 180,
     },
     {
-      id: "city",
-      width: 100,
-      header: "City",
-      footer: "City",
+      id: "date",
+      header: "Admissão",
+      width: 180,
+      editor: "datepicker",
+      template: (v: Date | string | null | undefined) => {
+        if (!v) return "";
+        const d = typeof v === "string" ? new Date(v) : v;
+        return d instanceof Date && !isNaN(d.getTime())
+          ? d.toLocaleDateString("pt-BR")
+          : "";
+      },
     },
     {
-      id: "firstName",
-      header: "First Name",
-      footer: "First Name",
-      width: 150,
+      id: "assigned",
+      header: "Cargo",
+      width: 180,
+      editor: "richselect",
+      options: users,
     },
-    {
-      id: "lastName",
-      header: "Last Name",
-      footer: "Last Name",
-      width: 150,
-    },
-    {
-      id: "email",
-      header: "Email",
-      footer: "Email",
-    },
-    {
-      id: "companyName",
-      header: "Company",
-      footer: "Company",
-    },
+  ];
+
+  const items = [
+    { title: "Efetivo", url: "#", icon: HouseIcon },
+    { title: "Cargo & Empresa", url: "#", icon: InboxIcon },
+    { title: "Passagens & Alojamento", url: "#", icon: CalendarIcon },
+    { title: "Pesquisar", url: "#", icon: SearchIcon },
+    { title: "Personalizar", url: "#", icon: SettingsIcon },
   ];
 </script>
 
-<main class="container">
-  <!-- Sidebar: -->
-  <Sidebar.Provider>
-    <!-- <AppSidebar /> -->
-    <div>
-      <Sidebar.Trigger />
-      {@render children?.()}
-    </div>
-  </Sidebar.Provider>
+<!-- 1. O Provider é obrigatório para controlar o estado/estilos do Sidebar -->
+<Sidebar.Provider>
+  <div class="flex h-screen w-full">
+    <!-- 2. Barra Lateral -->
+    <Sidebar.Root variant="sidebar" collapsible="offcanvas">
+      <Sidebar.Content>
+        <Sidebar.Group>
+          <Sidebar.GroupLabel>Tabelas - Cliente SurrealDB</Sidebar.GroupLabel>
+          <Sidebar.GroupContent>
+            <Sidebar.Menu>
+              {#each items as item (item.title)}
+                <Sidebar.MenuItem>
+                  <Sidebar.MenuButton>
+                    {#snippet child({ props })}
+                      <a href={item.url} {...props}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </a>
+                    {/snippet}
+                  </Sidebar.MenuButton>
+                </Sidebar.MenuItem>
+              {/each}
+            </Sidebar.Menu>
+          </Sidebar.GroupContent>
+        </Sidebar.Group>
+      </Sidebar.Content>
+      <Sidebar.Footer>
+        <Sidebar.MenuButton>
+          <a href="/#" class="flex flex-1 gap-3">
+            <SettingsIcon class="mt-0.5" />
+            <span>Configurações</span>
+          </a>
+        </Sidebar.MenuButton>
+      </Sidebar.Footer>
+    </Sidebar.Root>
 
-  <h1>Welcome to Tauri + Svelte</h1>
+    <!-- 3. Conteúdo Principal (Garante o botão Trigger e a Grid lado a lado) -->
+    <main class="flex-1 p-4 overflow-hidden">
+      <div class="mb-4 flex items-center gap-2">
+        <Sidebar.Trigger class="cursor-pointer" />
+        <h1 class="text-xl font-bold">Efetivo</h1>
+      </div>
 
-  <div class="row">
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
+      <!-- Container isolado para o SVAR DataGrid -->
+      <div
+        style="height: 500px; width: 100%;"
+        class="rounded-lg border border-border bg-card p-2 shadow-sm"
+      >
+        <Grid {data} {columns} multiselect={true} />
+      </div>
+    </main>
   </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
-
-  <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-  <p>{greetMsg}</p>
-
-  <!-- GRID: -->
-  <Grid {data} {columns} />
-</main>
-
-<style>
-  .logo.vite:hover {
-    filter: drop-shadow(0 0 2em #747bff);
-  }
-
-  .logo.svelte-kit:hover {
-    filter: drop-shadow(0 0 2em #f9fffc);
-  }
-
-  :root {
-    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-
-    color: #0f0f0f;
-    background-color: #f6f6f6;
-
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  .container {
-    margin: 0;
-    padding-top: 10vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: 0.75s;
-  }
-
-  .logo.tauri:hover {
-    filter: drop-shadow(0 0 2em #24c8db);
-  }
-
-  .row {
-    display: flex;
-    justify-content: center;
-  }
-
-  a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
-  }
-
-  a:hover {
-    color: #535bf2;
-  }
-
-  h1 {
-    text-align: center;
-  }
-
-  input,
-  button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    color: #0f0f0f;
-    background-color: #ffffff;
-    transition: border-color 0.25s;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-  }
-
-  button {
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: #396cd8;
-  }
-  button:active {
-    border-color: #396cd8;
-    background-color: #e8e8e8;
-  }
-
-  input,
-  button {
-    outline: none;
-  }
-
-  #greet-input {
-    margin-right: 5px;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color: #f6f6f6;
-      background-color: #2f2f2f;
-    }
-
-    a:hover {
-      color: #24c8db;
-    }
-
-    input,
-    button {
-      color: #ffffff;
-      background-color: #0f0f0f98;
-    }
-    button:active {
-      background-color: #0f0f0f69;
-    }
-  }
-</style>
+</Sidebar.Provider>
