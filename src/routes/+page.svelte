@@ -7,7 +7,12 @@
   import InboxIcon from "@lucide/svelte/icons/inbox";
   import SearchIcon from "@lucide/svelte/icons/search";
   import SettingsIcon from "@lucide/svelte/icons/settings";
+  import XIcon from "@lucide/svelte/icons/x";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
+  import { Separator } from "$lib/components/ui/separator/index.js";
+  import Button from "@/components/ui/button/button.svelte";
+  import * as Tabs from "$lib/components/ui/tabs/index.js";
+  import { stopImmediatePropagation, stopPropagation } from "svelte/legacy";
 
   // Dados do Grid
   const countries = [
@@ -86,6 +91,7 @@
     },
   ];
 
+  // Sidebar:
   const items = [
     { title: "Efetivo", url: "#", icon: HouseIcon },
     { title: "Cargo & Empresa", url: "#", icon: InboxIcon },
@@ -93,6 +99,15 @@
     { title: "Pesquisar", url: "#", icon: SearchIcon },
     { title: "Personalizar", url: "#", icon: SettingsIcon },
   ];
+
+  // ABAS:
+  let abas = $state([
+    { id: "0", title: "ABA", icon: "" },
+    { id: "1", title: "ABA1", icon: "" },
+    { id: "2", title: "ABA2", icon: "" },
+    { id: "3", title: "ABA3", icon: "" },
+  ]);
+  let abaSelected = $state({ id: abas[0].id, title: abas[0].title });
 </script>
 
 <!-- 1. O Provider é obrigatório para controlar o estado/estilos do Sidebar -->
@@ -132,11 +147,58 @@
     </Sidebar.Root>
 
     <!-- 3. Conteúdo Principal (Garante o botão Trigger e a Grid lado a lado) -->
-    <main class="flex-1 p-4 overflow-hidden">
-      <div class="mb-4 flex items-center gap-2">
+    <main class="flex-1 p-2 overflow-hidden">
+      <div class="flex items-center gap-2">
         <Sidebar.Trigger class="cursor-pointer" />
-        <h1 class="text-xl font-bold">Efetivo</h1>
+        <h1 class="text-xl font-bold flex">
+          <!-- titulo da guia: -->
+          {abaSelected.title}
+        </h1>
       </div>
+      <Tabs.Root value={abaSelected.id}>
+        <Button
+          onclick={() => {
+            abas.push({ id: "Efetivo:a", title: "Efetivo", icon: "" });
+          }}>Add</Button
+        >
+        <Tabs.List>
+          {#if abas.length <= 0}
+            {(abas = [{ id: "vazio", title: "vazio", icon: "" }])}
+            <Tabs.Trigger value="vazio">VAZIO!</Tabs.Trigger>
+          {:else}
+            {abas[0].title == "vazio" && abas.length >= 2 ? abas.shift() : ""}
+          {/if}
+          {#each abas as aba, i}
+            <Tabs.Trigger
+              onclick={() => (abaSelected = aba)}
+              value={aba.id}
+              class="not-[hover]:*:opacity-0 hover:*:opacity-100 {abaSelected.id ==
+              aba.id
+                ? 'bg-primary font-bold data-active:text-white'
+                : ''}"
+            >
+              {aba.title}
+              <Button
+                variant="outline"
+                class="p-1 m-0 size-2"
+                onclick={() => {
+                  abas.splice(i, 1);
+                }}
+              >
+                <XIcon /></Button
+              >
+            </Tabs.Trigger>
+          {/each}
+        </Tabs.List>
+        {#each abas as aba}
+          <Tabs.Content value={aba.id}>
+            Esse é o conteudo da ABA: {aba.id}:{aba.title}.
+            <p>oi {abaSelected.title}</p>
+          </Tabs.Content>
+        {/each}
+        <Tabs.Content value="vazio">VAZIO!</Tabs.Content>
+      </Tabs.Root>
+      <Separator class="m-1" />
 
       <!-- Container isolado para o SVAR DataGrid -->
       <div
