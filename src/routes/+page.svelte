@@ -1,24 +1,24 @@
 <script lang="ts">
-  import { Grid } from "@svar-ui/svelte-grid";
-
   // Sidebar e Ícones
   import CalendarIcon from "@lucide/svelte/icons/calendar";
   import HouseIcon from "@lucide/svelte/icons/house";
   import InboxIcon from "@lucide/svelte/icons/inbox";
   import SearchIcon from "@lucide/svelte/icons/search";
   import SettingsIcon from "@lucide/svelte/icons/settings";
-  import XIcon from "@lucide/svelte/icons/x";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
-  import { Separator } from "$lib/components/ui/separator/index.js";
-  import Button from "@/components/ui/button/button.svelte";
-  import * as Tabs from "$lib/components/ui/tabs/index.js";
-  import { stopImmediatePropagation, stopPropagation } from "svelte/legacy";
+  import Browser from "$lib/utility/Browser.svelte";
+  import * as b from "@/utility/browserTS.svelte";
+  import { invoke } from "@tauri-apps/api/core";
+  import { Grid } from "@svar-ui/svelte-grid";
+
+  let { tabs, current, tbAdd } = b;
 
   // Dados do Grid
   const countries = [
     { id: 1, label: "Gameleira, Pernambuco" },
     { id: 2, label: "Osasco, São Paulo" },
     { id: 3, label: "Japão" },
+    { id: "Aux. Adm", label: "Micael" },
   ];
 
   const users = [
@@ -27,43 +27,52 @@
     { id: 103, label: "Supervisor" },
   ];
 
-  const data = [
-    { id: 1, firstName: "Marcos", country: 1, date: new Date(), assigned: 101 },
+  type ComboOption = { id: string | number; label: string };
+
+  // Values:
+
+  let data = $state([
     {
-      id: 3,
-      firstName: "Marcos 2",
-      country: 2,
+      id: 1,
+      firstName: "Marcos",
+      cidade: 1,
       date: new Date(),
-      assigned: 103,
-    },
-    {
-      id: 4,
-      firstName: "Marcos 2",
-      country: 2,
-      date: new Date(),
-      assigned: 103,
     },
     {
       id: 2,
-      firstName: "Micael",
-      country: 2,
+      firstName: "Marcos 2",
+      cidade: 2,
       date: new Date(),
-      assigned: 102,
     },
-  ];
-
-  type ComboOption = { id: string | number; label: string };
-
-  const columns = [
-    { id: "id", header: "ID", width: 50 },
-    { id: "firstName", header: "Nome", editor: "text", width: 180 },
     {
-      id: "country",
-      header: "Cidade",
+      id: 3,
+      firstName: "Marcos 2",
+      cidade: 2,
+      date: new Date(),
+    },
+    {
+      id: 4,
+      firstName: "Micael",
+      cidade: 2,
+      date: new Date(),
+    },
+  ]);
+
+  let columns = $state([
+    { id: "id", header: "ID", width: 50, editor: "", format: 'abc' },
+    {
+      id: "firstName",
+      header: "Nome",
+      editor: "text",
+      width: 180,
+    },
+    {
+      id: "cidade",
+      header: "Nome cidade",
       editor: {
         type: "combo",
         config: {
-          template: (option: ComboOption) => `${option.id}. ${option.label}`,
+          template: (option: ComboOption) => `${option.id} - ${option.label}`,
         },
       },
       options: countries,
@@ -89,25 +98,67 @@
       editor: "richselect",
       options: users,
     },
-  ];
+  ]);
 
   // Sidebar:
-  const items = [
-    { title: "Efetivo", url: "#", icon: HouseIcon },
-    { title: "Cargo & Empresa", url: "#", icon: InboxIcon },
-    { title: "Passagens & Alojamento", url: "#", icon: CalendarIcon },
-    { title: "Pesquisar", url: "#", icon: SearchIcon },
-    { title: "Personalizar", url: "#", icon: SettingsIcon },
-  ];
+  let items = $state([
+    {
+      table: { table: "efetivo", name: "Efetivo Diário" },
+      title: "Efetivo",
+      url: "#",
+      icon: HouseIcon,
+    },
+  ]);
+  let itemCurrent = $state("efetivo");
+
+  // Banco:
+  async function reloadItems() {
+    items = [];
+    try {
+      // Retorna direto o dado que a função cuspir (ex: string[])
+      const tables = await invoke<any>("query", { sql: "tables" });
+      const clmns = await invoke<[]>("query", {
+        sql: `metadata:${itemCurrent}`,
+      });
+      const dt = await invoke<[]>("query", { sql: `table:${itemCurrent}` });
+
+      columns = clmns;
+      data = dt;
+
+      console.log("TABLES:", tables);
+      console.log("CULUMNS:", clmns);
+      console.log("DT:", dt);
+
+      if (Array.isArray(tables)) {
+        tables.forEach((t) => {
+          items.push({
+            table: t,
+            title: `${t.name} - ${t.table}`,
+            url: "#",
+            icon: InboxIcon,
+          });
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao buscar tabelas do SurrealDB:", error);
+    }
+  }
 
   // ABAS:
-  let abas = $state([
-    { id: "0", title: "ABA", icon: "" },
-    { id: "1", title: "ABA1", icon: "" },
-    { id: "2", title: "ABA2", icon: "" },
-    { id: "3", title: "ABA3", icon: "" },
-  ]);
-  let abaSelected = $state({ id: abas[0].id, title: abas[0].title });
+  let abas = [
+    {
+      record: "empty",
+      name: "Tabela",
+      icon: CalendarIcon,
+    },
+    { record: "0", name: "ABA", icon: CalendarIcon },
+    { record: "1", name: "ABA1", icon: CalendarIcon },
+    { record: "2", name: "ABA2", icon: CalendarIcon },
+    { record: "3", name: "ABA3", icon: CalendarIcon },
+  ] as b.Tab[];
+
+  tbAdd(abas);
+  let abaSelected = $state({ id: abas[0].record, title: abas[0].name });
 </script>
 
 <!-- 1. O Provider é obrigatório para controlar o estado/estilos do Sidebar -->
@@ -124,7 +175,14 @@
                 <Sidebar.MenuItem>
                   <Sidebar.MenuButton>
                     {#snippet child({ props })}
-                      <a href={item.url} {...props}>
+                      <a
+                        onclick={() => {
+                          reloadItems();
+                          itemCurrent = item.table.table;
+                        }}
+                        href={item.url}
+                        {...props}
+                      >
                         <item.icon />
                         <span>{item.title}</span>
                       </a>
@@ -145,72 +203,18 @@
         </Sidebar.MenuButton>
       </Sidebar.Footer>
     </Sidebar.Root>
-
-    <!-- 3. Conteúdo Principal (Garante o botão Trigger e a Grid lado a lado) -->
-    <main class="flex-1 p-2 overflow-hidden">
-      <div class="flex items-center gap-2">
-        <Sidebar.Trigger class="cursor-pointer" />
-        <h1 class="text-xl font-bold flex">
-          <!-- titulo da guia: -->
-          {abaSelected.title}
-        </h1>
-      </div>
-      <Tabs.Root value={abaSelected.id}>
-        <Button
-          onclick={() => {
-            abas.push({ id: "Efetivo:a", title: "Efetivo", icon: "" });
-          }}>Add</Button
-        >
-        <Tabs.List>
-          {#if abas.length <= 0}
-            {(abas = [{ id: "vazio", title: "vazio", icon: "" }])}
-            <Tabs.Trigger value="vazio">VAZIO!</Tabs.Trigger>
-          {:else}
-            {abas[0].title == "vazio" && abas.length >= 2 ? abas.shift() : ""}
-          {/if}
-          {#each abas as aba, i}
-            <Tabs.Trigger
-              onclick={() => (abaSelected = aba)}
-              value={aba.id}
-              class="not-[hover]:*:opacity-0 hover:*:opacity-100 {abaSelected.id ==
-              aba.id
-                ? 'bg-primary font-bold data-active:text-white'
-                : ''}"
-            >
-              {aba.title}
-              <Button
-                variant="outline"
-                class="p-1 m-0 size-2"
-                onclick={() => {
-                  abas.splice(i, 1);
-                }}
-              >
-                <XIcon /></Button
-              >
-            </Tabs.Trigger>
-          {/each}
-        </Tabs.List>
-        {#each abas as aba}
-          <Tabs.Content value={aba.id}>
-            Esse é o conteudo da ABA: {aba.id}:{aba.title}.
-            <p>oi {abaSelected.title}</p>
-          </Tabs.Content>
-        {/each}
-        <Tabs.Content value="vazio">VAZIO!</Tabs.Content>
-        <!-- Container isolado para o SVAR DataGrid -->
-        <Separator class="m-1" />
-        <p>
-          {abas.length <= 1
-            ? "Selecione alguma tabela para visualizar os dados!"
-            : ""}
-        </p>
-        <div
-          style="height: 500px; width: 100%;"
-          class="rounded-lg border border-border bg-card p-2 shadow-sm"
-        >
-          <Grid {data} {columns} multiselect={true} />
-        </div>
-      </Tabs.Root>
-    </main>
-  </div>
-</Sidebar.Provider>
+    <!-- conteudo aqui -->
+    <Browser />
+    <div
+      style="height: 500px; width: 100%;"
+      class="rounded-lg border border-border bg-card p-2 shadow-sm"
+    >
+      <Grid
+        bind:data
+        bind:columns
+        reorder={true}
+        autoRowHeight={true}
+      />
+    </div>
+  </div></Sidebar.Provider
+>
